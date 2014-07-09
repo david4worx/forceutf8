@@ -346,7 +346,7 @@ class Encoding
     public static function normalizeEncoding($encodingLabel)
     {
         $encoding = strtoupper($encodingLabel);
-        $enc = preg_replace('/[^a-zA-Z0-9\s]/', '', $encoding);
+        $encoding = preg_replace('/[^a-zA-Z0-9\s]/', '', $encoding);
         $equivalences = array(
             'ISO88591' => 'ISO-8859-1',
             'ISO8859' => 'ISO-8859-1',
@@ -359,11 +359,11 @@ class Encoding
             'WINDOWS1252' => 'ISO-8859-1'
         );
 
-        if (empty($equivalences[$encoding])) {
-            return 'UTF-8';
+        if (array_key_exists($encoding, $equivalences)) {
+            return $equivalences[$encoding];
         }
-
-        return $equivalences[$encoding];
+        //Sane default
+        return 'UTF-8';
     }
 
     public static function encode($encodingLabel, $text)
