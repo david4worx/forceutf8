@@ -178,84 +178,83 @@ class Encoding
                 $text[$k] = self::toUTF8($v);
             }
             return $text;
-        } elseif (is_string($text)) {
-
-            if (function_exists('mb_strlen') && ((int)ini_get('mbstring.func_overload')) & 2) {
-                $max = mb_strlen($text, '8bit');
-            } else {
-                $max = strlen($text);
-            }
-
-            $buf = "";
-            for ($i = 0; $i < $max; $i++) {
-                $c1 = $text{$i};
-                if ($c1 >= "\xc0") { //Should be converted to UTF8, if it's not UTF8 already
-                    $c2 = $i + 1 >= $max ? "\x00" : $text{$i + 1};
-                    $c3 = $i + 2 >= $max ? "\x00" : $text{$i + 2};
-                    $c4 = $i + 3 >= $max ? "\x00" : $text{$i + 3};
-
-                    $isC2UTF8 = ($c2 >= "\x80" && $c2 <= "\xbf");
-                    $isC3UTF8 = ($c3 >= "\x80" && $c3 <= "\xbf");
-                    $isC4UTF8 = ($c4 >= "\x80" && $c4 <= "\xbf");
-
-                    if ($c1 >= "\xc0" & $c1 <= "\xdf") { //looks like 2 bytes UTF8
-
-                        if ($isC2UTF8) { //yeah, almost sure it's UTF8 already
-                            $buf .= $c1 . $c2;
-                            $i++;
-                        } else { //not valid UTF8.  Convert it.
-                            $cc1 = (chr(ord($c1) / 64) | "\xc0");
-                            $cc2 = ($c1 & "\x3f") | "\x80";
-                            $buf .= $cc1 . $cc2;
-                        }
-
-                    } elseif ($c1 >= "\xe0" & $c1 <= "\xef") { //looks like 3 bytes UTF8
-
-                        if ($isC2UTF8 && $isC3UTF8) { //yeah, almost sure it's UTF8 already
-                            $buf .= $c1 . $c2 . $c3;
-                            $i = $i + 2;
-                        } else { //not valid UTF8.  Convert it.
-                            $cc1 = (chr(ord($c1) / 64) | "\xc0");
-                            $cc2 = ($c1 & "\x3f") | "\x80";
-                            $buf .= $cc1 . $cc2;
-                        }
-
-                    } elseif ($c1 >= "\xf0" & $c1 <= "\xf7") { //looks like 4 bytes UTF8
-
-                        if ($isC2UTF8 && $isC3UTF8 && $isC4UTF8) { //yeah, almost sure it's UTF8 already
-                            $buf .= $c1 . $c2 . $c3;
-                            $i = $i + 2;
-                        } else { //not valid UTF8.  Convert it.
-                            $cc1 = (chr(ord($c1) / 64) | "\xc0");
-                            $cc2 = ($c1 & "\x3f") | "\x80";
-                            $buf .= $cc1 . $cc2;
-                        }
-
-                    } else { //doesn't look like UTF8, but should be converted
-
-                        $cc1 = (chr(ord($c1) / 64) | "\xc0");
-                        $cc2 = (($c1 & "\x3f") | "\x80");
-                        $buf .= $cc1 . $cc2;
-
-                    }
-                } elseif (($c1 & "\xc0") == "\x80") { // needs conversion
-
-                    if (isset(self::$win1252ToUtf8[ord($c1)])) { //found in Windows-1252 special cases
-                        $buf .= self::$win1252ToUtf8[ord($c1)];
-                    } else {
-                        $cc1 = (chr(ord($c1) / 64) | "\xc0");
-                        $cc2 = (($c1 & "\x3f") | "\x80");
-                        $buf .= $cc1 . $cc2;
-                    }
-
-                } else { // it doesn't need conversion
-                    $buf .= $c1;
-                }
-            }
-            return $buf;
-        } else {
+        }
+        if (!is_string($text)) {
             return $text;
         }
+        if (function_exists('mb_strlen') && ((int)ini_get('mbstring.func_overload')) & 2) {
+            $max = mb_strlen($text, '8bit');
+        } else {
+            $max = strlen($text);
+        }
+
+        $buf = "";
+        for ($i = 0; $i < $max; $i++) {
+            $c1 = $text{$i};
+            if ($c1 >= "\xc0") { //Should be converted to UTF8, if it's not UTF8 already
+                $c2 = $i + 1 >= $max ? "\x00" : $text{$i + 1};
+                $c3 = $i + 2 >= $max ? "\x00" : $text{$i + 2};
+                $c4 = $i + 3 >= $max ? "\x00" : $text{$i + 3};
+
+                $isC2UTF8 = ($c2 >= "\x80" && $c2 <= "\xbf");
+                $isC3UTF8 = ($c3 >= "\x80" && $c3 <= "\xbf");
+                $isC4UTF8 = ($c4 >= "\x80" && $c4 <= "\xbf");
+
+                if ($c1 >= "\xc0" & $c1 <= "\xdf") { //looks like 2 bytes UTF8
+
+                    if ($isC2UTF8) { //yeah, almost sure it's UTF8 already
+                        $buf .= $c1 . $c2;
+                        $i++;
+                    } else { //not valid UTF8.  Convert it.
+                        $cc1 = (chr(ord($c1) / 64) | "\xc0");
+                        $cc2 = ($c1 & "\x3f") | "\x80";
+                        $buf .= $cc1 . $cc2;
+                    }
+
+                } elseif ($c1 >= "\xe0" & $c1 <= "\xef") { //looks like 3 bytes UTF8
+
+                    if ($isC2UTF8 && $isC3UTF8) { //yeah, almost sure it's UTF8 already
+                        $buf .= $c1 . $c2 . $c3;
+                        $i = $i + 2;
+                    } else { //not valid UTF8.  Convert it.
+                        $cc1 = (chr(ord($c1) / 64) | "\xc0");
+                        $cc2 = ($c1 & "\x3f") | "\x80";
+                        $buf .= $cc1 . $cc2;
+                    }
+
+                } elseif ($c1 >= "\xf0" & $c1 <= "\xf7") { //looks like 4 bytes UTF8
+
+                    if ($isC2UTF8 && $isC3UTF8 && $isC4UTF8) { //yeah, almost sure it's UTF8 already
+                        $buf .= $c1 . $c2 . $c3;
+                        $i = $i + 2;
+                    } else { //not valid UTF8.  Convert it.
+                        $cc1 = (chr(ord($c1) / 64) | "\xc0");
+                        $cc2 = ($c1 & "\x3f") | "\x80";
+                        $buf .= $cc1 . $cc2;
+                    }
+
+                } else { //doesn't look like UTF8, but should be converted
+
+                    $cc1 = (chr(ord($c1) / 64) | "\xc0");
+                    $cc2 = (($c1 & "\x3f") | "\x80");
+                    $buf .= $cc1 . $cc2;
+
+                }
+            } elseif (($c1 & "\xc0") == "\x80") { // needs conversion
+
+                if (isset(self::$win1252ToUtf8[ord($c1)])) { //found in Windows-1252 special cases
+                    $buf .= self::$win1252ToUtf8[ord($c1)];
+                } else {
+                    $cc1 = (chr(ord($c1) / 64) | "\xc0");
+                    $cc2 = (($c1 & "\x3f") | "\x80");
+                    $buf .= $cc1 . $cc2;
+                }
+
+            } else { // it doesn't need conversion
+                $buf .= $c1;
+            }
+        }
+        return $buf;
     }
 
     public static function toWin1252($text)
@@ -265,17 +264,17 @@ class Encoding
                 $text[$k] = self::toWin1252($v);
             }
             return $text;
-        } elseif (is_string($text)) {
-            return utf8_decode(
-                str_replace(
-                    array_keys(self::$utf8ToWin1252),
-                    array_values(self::$utf8ToWin1252),
-                    self::toUTF8($text)
-                )
-            );
-        } else {
+        }
+        if (!is_string($text)) {
             return $text;
         }
+        return utf8_decode(
+            str_replace(
+                array_keys(self::$utf8ToWin1252),
+                array_values(self::$utf8ToWin1252),
+                self::toUTF8($text)
+            )
+        );
     }
 
     public static function toISO8859($text)
@@ -375,5 +374,7 @@ class Encoding
         if ($encodingLabel == 'ISO-8859-1') {
             return Encoding::toLatin1($text);
         }
+        //Return something by convention
+        return $text;
     }
 }
